@@ -1,25 +1,18 @@
-"""Basic data validation utilities."""
-
-from typing import Tuple, List
+# src/mlops_project/data/validate.py
 import pandas as pd
+from pandera.errors import SchemaError
+from mlops_project.data.schema import get_training_schema
+from mlops_project.core.logger import get_logger
 
+logger = get_logger(__name__)
 
-def validate_data(df: pd.DataFrame) -> Tuple[bool, List[str]]:
-    """Perform simple validation checks on a DataFrame.
+def validate_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+    schema = get_training_schema()
 
-    Returns a tuple `(is_valid, issues)` where `issues` is a list of human-
-    readable problem descriptions.
-    """
-    issues: List[str] = []
-
-    if df is None:
-        issues.append("dataframe is None")
-        return False, issues
-
-    if df.empty:
-        issues.append("dataframe is empty")
-
-    if df.isnull().values.any():
-        issues.append("contains missing values")
-
-    return len(issues) == 0, issues
+    try:
+        validated_df = schema.validate(df)
+        logger.info("Data validation successful")
+        return validated_df
+    except SchemaError as e:
+        logger.error("Data validation failed")
+        raise

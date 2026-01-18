@@ -200,3 +200,100 @@ This project uses **Pandera** to validate data schema and ensure data quality. P
     "income": Column(float, Check.isin([50000.0, 64000.0, 120000.0])),  # only these values
     `
   - For more information, see the [Pandera Documentation](https://pandera.readthedocs.io/).
+
+---
+
+## Feature Transformation
+
+This project includes a feature engineering module that transforms raw data into features suitable for modeling.
+
+- **What is Feature Transformation?**:
+  - Feature transformation applies mathematical operations to raw features to improve model performance.
+  - Examples: scaling, log transformations, polynomial features, etc.
+
+- **Feature Transform Code** (\src/mlops_project/data/transform.py\):
+  - The \	ransform_features()\ function applies transformations to validated data:
+    \\\python
+    def transform_features(df: pd.DataFrame) -> pd.DataFrame:
+        logger.info("Starting feature transformations")
+        df = df.copy()
+        
+        # Scale age by dividing by 100
+        df["age_scaled"] = df["age"] / 100.0
+        
+        # Log-transform income (with offset to avoid log(0))
+        df["income_log"] = (df["income"] + 1).apply(lambda x: float(np.log(x)))
+        
+        # Select and return transformed features
+        features = df[["age_scaled", "income_log", "target"]]
+        logger.info("Feature transformation completed")
+        return features
+    \\\
+  - **Transformations applied**:
+    - \ge_scaled\: age divided by 100 (normalization).
+    - \income_log\: log-transform of (income + 1) to handle skewed distributions.
+    - \	arget\: original binary label (0 or 1).
+
+- **Integration with Data Pipeline**:
+  - \load_and_prepare_data()\ in \ingest.py\ orchestrates the full pipeline:
+    1. Load CSV file.
+    2. Validate schema using Pandera.
+    3. Transform features.
+    4. Return processed DataFrame.
+  - Example usage:
+    \\\powershell
+    poetry run python -c "from mlops_project.data.ingest import load_and_prepare_data; df = load_and_prepare_data('data/raw/sample.csv'); print(df.head())"
+    \\\
+
+---
+
+## Testing the Data Pipeline
+
+The project includes pytest tests to validate the data pipeline end-to-end.
+
+- **Test Files**:
+  - \	ests/test_smoke.py\: Basic smoke test to verify the test suite runs.
+  - \	ests/data/test_transform.py\: Tests the \	ransform_features()\ function to ensure it produces correct output columns.
+
+- **Running Tests**:
+  - Run all tests:
+    \\\powershell
+    poetry run pytest -v
+    \\\
+  - Run a specific test file:
+    \\\powershell
+    poetry run pytest tests/data/test_transform.py -v
+    \\\
+  - Run tests with coverage:
+    \\\powershell
+    poetry run pytest --cov=src/mlops_project --cov-report=term-missing
+    \\\
+
+- **Test Details**:
+  - \	est_transform_features_output_columns\: Validates that \	ransform_features()\ returns a DataFrame with the expected columns (\ge_scaled\, \income_log\, \	arget\).
+  - \	est_smoke_passes\: A simple pass/fail test to ensure the test infrastructure works.
+
+- **Fixtures & Test Data**:
+  - Fixtures can be created in \	ests/conftest.py\ to share test data and setup across tests.
+  - Example fixture for a sample DataFrame:
+    \\\python
+    @pytest.fixture
+    def sample_df():
+        return pd.DataFrame({
+            "age": [25, 32, 45],
+            "income": [50000.0, 64000.0, 120000.0],
+            "target": [1, 0, 1],
+        })
+    \\\
+  - Use in tests: \def test_example(sample_df): ...\
+
+- **Pytest Configuration**:
+  - Pytest is configured in \pyproject.toml\ under \[tool.pytest.ini_options]\:
+    \\\	oml
+    [tool.pytest.ini_options]
+    testpaths = ["tests"]
+    pythonpath = ["src"]
+    \\\
+  - This tells pytest to:
+    - Search for tests in the \	ests/\ directory.
+    - Add \src/\ to Python's import path so it can find \mlops_project\ modules.
