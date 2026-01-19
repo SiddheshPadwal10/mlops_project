@@ -13,6 +13,6 @@ def validate_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         validated_df = schema.validate(df)
         logger.info("Data validation successful")
         return validated_df
-    except SchemaError as e:
+    except SchemaError:
         logger.error("Data validation failed")
         raise
