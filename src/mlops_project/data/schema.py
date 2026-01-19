@@ -1,5 +1,4 @@
 # src/mlops_project/data/schema.py
-import pandera.pandas as pa
 from pandera.pandas import Column, DataFrameSchema, Check
 
 def get_training_schema() -> DataFrameSchema:
